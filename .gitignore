@@ -1,0 +1,96 @@
+# ──────────────────────────────────────────────
+# Go (backend & cli)
+# ──────────────────────────────────────────────
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/backend/skillhub
+/cli/skillhub
+/cli/skillhub.exe
+
+# Go workspace
+go.work.sum
+
+# ──────────────────────────────────────────────
+# Python (workers)
+# ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+*.egg
+MANIFEST
+.coverage
+coverage.xml
+htmlcov/
+
+# ──────────────────────────────────────────────
+# Node / Next.js (frontend)
+# ──────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ──────────────────────────────────────────────
+# Environment & secrets
+# ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+secrets.yaml
+values.secret.yaml
+
+# ──────────────────────────────────────────────
+# Local dev data
+# ──────────────────────────────────────────────
+backend/uploads/
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/skillhub.db
+
+# ──────────────────────────────────────────────
+# IDE & OS
+# ──────────────────────────────────────────────
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ──────────────────────────────────────────────
+# Docker / Helm generated
+# ──────────────────────────────────────────────
+deploy/helm/skillhub/charts/

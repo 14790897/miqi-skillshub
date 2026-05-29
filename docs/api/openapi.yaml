@@ -1,0 +1,1361 @@
+openapi: "3.1.0"
+info:
+  title: MiQi SkillHub API
+  description: |
+    企业内部 AI Skills 管理平台 REST API。
+    
+    所有受保护接口需在请求头中携带 JWT：
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: "1.0.0"
+  contact:
+    name: MiQi AI Platform Team
+    email: platform@miqi.ai
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: 本地开发
+  - url: https://skillhub.company.com/api/v1
+    description: 生产环境
+
+tags:
+  - name: Auth
+    description: 认证与注册
+  - name: Skills
+    description: 技能管理
+  - name: Versions
+    description: 版本管理
+  - name: Artifacts
+    description: 制品上传
+  - name: ScanReports
+    description: 安全扫描报告
+  - name: Reviews
+    description: 人工审核
+  - name: Namespaces
+    description: 命名空间管理
+  - name: Search
+    description: 技能搜索
+  - name: Runtime
+    description: 运行时客户端 API
+  - name: Teams
+    description: 团队管理
+  - name: Profile
+    description: 用户个人信息
+  - name: Admin
+    description: 平台管理（需 platform_admin 角色）
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "资源不存在"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [consumer, author, maintainer, security_reviewer, namespace_admin, platform_admin]
+        department:
+          type: string
+        avatar_url:
+          type: string
+        last_login_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    Namespace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "company/hr"
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Skill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        namespace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "onboarding-assistant"
+        display_name:
+          type: string
+          example: "员工入职助手"
+        description:
+          type: string
+        owner_id:
+          type: string
+          format: uuid
+        visibility:
+          type: string
+          enum: [private, team, org]
+        status:
+          type: string
+          enum: [active, deprecated, archived]
+        tags:
+          type: array
+          items:
+            type: string
+        latest_version_id:
+          type: string
+          format: uuid
+        stable_version_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SkillVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        skill_id:
+          type: string
+          format: uuid
+        version:
+          type: string
+          example: "1.2.0"
+        status:
+          type: string
+          enum: [candidate, approved, published, blocked, deprecated]
+        trust_grade:
+          type: string
+          enum: [A, B, C, D, F]
+        skill_type:
+          type: string
+          enum: [prompt_only, prompt_with_references, prompt_with_scripts, workflow_skill, mcp_adapter_skill]
+        artifact_hash:
+          type: string
+        release_notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ScanReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        version_id:
+          type: string
+          format: uuid
+        scanner:
+          type: string
+          enum: [manifest_validator, secret_scanner, static_scanner, llm_judge]
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        findings:
+          type: array
+          items:
+            type: object
+        created_at:
+          type: string
+          format: date-time
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        version_id:
+          type: string
+          format: uuid
+        reviewer_id:
+          type: string
+          format: uuid
+        decision:
+          type: string
+          enum: [pending, approved, changes_requested, rejected]
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ─── Health ──────────────────────────────────────────────────────────────
+  /health:
+    get:
+      tags: [Auth]
+      summary: 健康检查
+      security: []
+      responses:
+        "200":
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  # ─── Auth ────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 注册新用户
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        "201":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  token:
+                    type: string
+        "400":
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: 邮箱已注册
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 用户登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  token:
+                    type: string
+        "401":
+          description: 邮箱或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ─── Profile ─────────────────────────────────────────────────────────────
+  /profile:
+    get:
+      tags: [Profile]
+      summary: 获取当前用户信息
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: OK
+    patch:
+      tags: [Profile]
+      summary: 更新个人信息
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                department:
+                  type: string
+                avatar_url:
+                  type: string
+      responses:
+        "200":
+          description: 更新成功
+
+  /profile/change-password:
+    post:
+      tags: [Profile]
+      summary: 修改密码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_password, new_password]
+              properties:
+                old_password:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 6
+      responses:
+        "200":
+          description: 修改成功
+        "400":
+          description: 旧密码错误
+
+  # ─── Artifacts ───────────────────────────────────────────────────────────
+  /artifacts/upload:
+    post:
+      tags: [Artifacts]
+      summary: 上传技能制品包
+      description: |
+        上传 ZIP 格式的技能包，返回存储路径和 SHA256 哈希值。
+        
+        需要 `author` 角色。文件大小限制见 `SCAN_MAX_FILE_SIZE_MB` 配置。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  hash:
+                    type: string
+                    description: SHA256 哈希
+        "400":
+          description: 文件格式错误或超出大小限制
+
+  # ─── Namespaces ──────────────────────────────────────────────────────────
+  /namespaces:
+    get:
+      tags: [Namespaces]
+      summary: 列出命名空间
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Namespace"
+          description: OK
+    post:
+      tags: [Namespaces]
+      summary: 创建命名空间
+      description: 需要 `namespace_admin` 或 `platform_admin` 角色。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: "company/finance"
+                description:
+                  type: string
+      responses:
+        "201":
+          description: 创建成功
+
+  /namespaces/{id}:
+    get:
+      tags: [Namespaces]
+      summary: 获取命名空间详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Namespace"
+          description: OK
+        "404":
+          description: 不存在
+
+  # ─── Skills ──────────────────────────────────────────────────────────────
+  /skills:
+    get:
+      tags: [Skills]
+      summary: 列出技能
+      parameters:
+        - name: namespace_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, deprecated, archived]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Skill"
+                  total:
+                    type: integer
+          description: OK
+    post:
+      tags: [Skills]
+      summary: 创建技能
+      description: 需要 `author` 角色。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [namespace_id, name, display_name]
+              properties:
+                namespace_id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                display_name:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                visibility:
+                  type: string
+                  enum: [private, team, org]
+                  default: team
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+
+  /skills/{id}:
+    get:
+      tags: [Skills]
+      summary: 获取技能详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+          description: OK
+    patch:
+      tags: [Skills]
+      summary: 更新技能信息
+      description: 需要 `author` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                description:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                visibility:
+                  type: string
+                  enum: [private, team, org]
+      responses:
+        "200":
+          description: 更新成功
+    delete:
+      tags: [Skills]
+      summary: 删除技能
+      description: 需要 `author` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: 删除成功
+
+  /skills/{id}/versions:
+    get:
+      tags: [Versions]
+      summary: 列出技能的所有版本
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SkillVersion"
+          description: OK
+    post:
+      tags: [Versions]
+      summary: 创建技能版本
+      description: 需要 `author` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, artifact_path, artifact_hash]
+              properties:
+                version:
+                  type: string
+                  example: "1.2.0"
+                artifact_path:
+                  type: string
+                  description: 通过 /artifacts/upload 获得的路径
+                artifact_hash:
+                  type: string
+                  description: SHA256 哈希
+                release_notes:
+                  type: string
+                skill_type:
+                  type: string
+                  enum: [prompt_only, prompt_with_references, prompt_with_scripts, workflow_skill, mcp_adapter_skill]
+      responses:
+        "201":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillVersion"
+
+  # ─── Versions ────────────────────────────────────────────────────────────
+  /versions/{vid}:
+    get:
+      tags: [Versions]
+      summary: 获取版本详情
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillVersion"
+          description: OK
+
+  /versions/{vid}/submit:
+    post:
+      tags: [Versions]
+      summary: 提交版本（触发自动扫描）
+      description: 需要 `author` 角色。将版本提交后将自动触发安全扫描流水线。
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 提交成功，扫描已入队
+
+  /versions/{vid}/llm-scan:
+    post:
+      tags: [Versions]
+      summary: 触发 LLM 质量评估
+      description: 需要 `author` 角色。
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 评估已入队
+
+  /versions/{vid}/submit-review:
+    post:
+      tags: [Versions]
+      summary: 提交人工审核
+      description: 需要 `author` 角色。将版本提交给安全审核员进行人工审核。
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 已提交审核
+
+  /versions/{vid}/publish:
+    post:
+      tags: [Versions]
+      summary: 发布版本
+      description: 需要 `maintainer` 角色。
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 发布成功
+
+  /versions/{vid}/deprecate:
+    post:
+      tags: [Versions]
+      summary: 废弃版本
+      description: 需要 `maintainer` 角色。
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 已废弃
+
+  /versions/{vid}/block:
+    post:
+      tags: [Versions]
+      summary: 阻断版本（禁止安装）
+      description: 需要 `maintainer` 角色。
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 已阻断
+
+  /versions/{vid}/scan:
+    post:
+      tags: [ScanReports]
+      summary: 触发安全扫描
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 扫描已入队
+
+  /versions/{vid}/scan-reports:
+    get:
+      tags: [ScanReports]
+      summary: 列出版本的扫描报告
+      parameters:
+        - name: vid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanReport"
+          description: OK
+
+  # ─── Scan Reports ─────────────────────────────────────────────────────────
+  /scan-reports/{rid}:
+    get:
+      tags: [ScanReports]
+      summary: 获取扫描报告详情
+      parameters:
+        - name: rid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanReport"
+          description: OK
+
+  # ─── Reviews ──────────────────────────────────────────────────────────────
+  /reviews/pending:
+    get:
+      tags: [Reviews]
+      summary: 列出待审核版本
+      description: 需要 `security_reviewer` 或更高角色。
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+          description: OK
+
+  /reviews/{id}/approve:
+    post:
+      tags: [Reviews]
+      summary: 批准审核
+      description: 需要 `security_reviewer` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: 已批准
+
+  /reviews/{id}/request-changes:
+    post:
+      tags: [Reviews]
+      summary: 请求修改
+      description: 需要 `security_reviewer` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: 已请求修改
+
+  /reviews/{id}/reject:
+    post:
+      tags: [Reviews]
+      summary: 拒绝版本
+      description: 需要 `security_reviewer` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment:
+                  type: string
+      responses:
+        "200":
+          description: 已拒绝
+
+  # ─── Search ───────────────────────────────────────────────────────────────
+  /search/skills:
+    get:
+      tags: [Search]
+      summary: 搜索技能
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 搜索关键词（匹配名称、描述、标签）
+        - name: namespace
+          in: query
+          schema:
+            type: string
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: 逗号分隔的标签列表
+        - name: trust_grade
+          in: query
+          schema:
+            type: string
+            enum: [A, B, C, D, F]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Skill"
+                  total:
+                    type: integer
+          description: OK
+
+  # ─── Runtime ──────────────────────────────────────────────────────────────
+  /runtime/skills:
+    get:
+      tags: [Runtime]
+      summary: 列出可用技能（运行时客户端）
+      description: |
+        供 Agent 客户端（Chatbot、CLI、MCP Client 等）调用。
+        仅返回已发布（published）且未被阻断的版本。
+      parameters:
+        - name: namespace
+          in: query
+          schema:
+            type: string
+        - name: min_trust_grade
+          in: query
+          schema:
+            type: string
+            enum: [A, B, C, D]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Skill"
+          description: OK
+
+  /runtime/skills/{namespace}/{name}/{version}/install-manifest:
+    get:
+      tags: [Runtime]
+      summary: 获取技能安装清单
+      description: 返回完整的 skillhub.yaml 清单，包含权限声明和安全配置。
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "company/hr"
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "onboarding-assistant"
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "1.2.0"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: skillhub.yaml 清单内容
+
+  /runtime/skills/{namespace}/{name}/{version}/download:
+    get:
+      tags: [Runtime]
+      summary: 下载技能制品包
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ZIP 文件流
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: 无权限或版本被阻断
+        "404":
+          description: 版本不存在
+
+  # ─── Teams ────────────────────────────────────────────────────────────────
+  /teams:
+    get:
+      tags: [Teams]
+      summary: 列出团队
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+          description: OK
+    post:
+      tags: [Teams]
+      summary: 创建团队
+      description: 需要 `platform_admin` 或 `namespace_admin` 角色。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: 创建成功
+
+  /teams/{id}:
+    get:
+      tags: [Teams]
+      summary: 获取团队详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+          description: OK
+    patch:
+      tags: [Teams]
+      summary: 更新团队信息
+      description: 需要管理员角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: 更新成功
+    delete:
+      tags: [Teams]
+      summary: 删除团队
+      description: 需要管理员角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: 删除成功
+
+  /teams/{id}/members:
+    get:
+      tags: [Teams]
+      summary: 列出团队成员
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [Teams]
+      summary: 添加团队成员
+      description: 需要管理员角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, role]
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                role:
+                  type: string
+      responses:
+        "201":
+          description: 添加成功
+
+  /teams/{id}/members/{userId}:
+    delete:
+      tags: [Teams]
+      summary: 移除团队成员
+      description: 需要管理员角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: 已移除
+
+  # ─── Admin ────────────────────────────────────────────────────────────────
+  /admin/audit:
+    get:
+      tags: [Admin]
+      summary: 查询审计日志
+      description: 需要 `platform_admin` 角色。
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: OK
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: 列出所有用户
+      description: 需要 `platform_admin` 角色。
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+          description: OK
+
+  /admin/users/{id}:
+    patch:
+      tags: [Admin]
+      summary: 更新用户角色
+      description: 需要 `platform_admin` 角色。
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roles]
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+                    enum: [consumer, author, maintainer, security_reviewer, namespace_admin, platform_admin]
+      responses:
+        "200":
+          description: 更新成功
+
+  /admin/llm-config:
+    get:
+      tags: [Admin]
+      summary: 获取 LLM 配置
+      description: 需要 `platform_admin` 角色。
+      responses:
+        "200":
+          description: OK
+    put:
+      tags: [Admin]
+      summary: 更新 LLM 配置
+      description: 需要 `platform_admin` 角色。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                endpoint:
+                  type: string
+                api_key:
+                  type: string
+                model:
+                  type: string
+      responses:
+        "200":
+          description: 更新成功

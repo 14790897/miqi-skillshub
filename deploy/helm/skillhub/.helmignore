@@ -1,0 +1,11 @@
+# Patterns to ignore when building packages.
+*.orig
+.git
+.github
+.DS_Store
+
+# CI
+.gitlab-ci.yml
+
+# Helm unit test output
+**/tests/__snapshots__

@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "skillhub.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "skillhub.labels" . | nindent 4 }}
+data:
+  # ── Server ──────────────────────────────────────────
+  SERVER_HOST: "0.0.0.0"
+  SERVER_PORT: "8080"
+  SERVER_READ_TIMEOUT: "30s"
+  SERVER_WRITE_TIMEOUT: "30s"
+
+  # ── Database ─────────────────────────────────────────
+  DATABASE_HOST: {{ include "skillhub.postgresHost" . | quote }}
+  DATABASE_PORT: {{ include "skillhub.postgresPort" . | quote }}
+  DATABASE_USER: {{ if .Values.postgresql.enabled }}{{ .Values.postgresql.auth.username | quote }}{{ else }}{{ .Values.postgresql.external.username | quote }}{{ end }}
+  DATABASE_NAME: {{ if .Values.postgresql.enabled }}{{ .Values.postgresql.auth.database | quote }}{{ else }}{{ .Values.postgresql.external.database | quote }}{{ end }}
+  DATABASE_SSLMODE: {{ if .Values.postgresql.enabled }}"disable"{{ else }}{{ .Values.postgresql.external.sslmode | quote }}{{ end }}
+
+  # ── Redis ─────────────────────────────────────────────
+  REDIS_HOST: {{ include "skillhub.redisHost" . | quote }}
+  REDIS_PORT: {{ if .Values.redis.enabled }}"6379"{{ else }}{{ .Values.redis.external.port | quote }}{{ end }}
+  REDIS_DB: "0"
+
+  # ── MinIO ─────────────────────────────────────────────
+  MINIO_ENDPOINT: {{ include "skillhub.minioEndpoint" . | quote }}
+  MINIO_BUCKET: {{ if .Values.minio.enabled }}{{ .Values.minio.defaultBuckets | quote }}{{ else }}{{ .Values.minio.external.bucket | quote }}{{ end }}
+  MINIO_USE_SSL: {{ if .Values.minio.enabled }}"false"{{ else }}{{ .Values.minio.external.useSSL | quote }}{{ end }}
+
+  # ── JWT ───────────────────────────────────────────────
+  JWT_EXPIRATION: {{ .Values.app.jwtExpiration | quote }}
+
+  # ── LLM ───────────────────────────────────────────────
+  LLM_ENDPOINT: {{ .Values.app.llm.endpoint | quote }}
+  LLM_MODEL: {{ .Values.app.llm.model | quote }}
+
+  # ── Scan ──────────────────────────────────────────────
+  SCAN_SANDBOX_IMAGE: {{ .Values.app.scan.sandboxImage | quote }}
+  SCAN_TIMEOUT_SECONDS: {{ .Values.app.scan.timeoutSeconds | quote }}
+  SCAN_MAX_FILE_SIZE_MB: {{ .Values.app.scan.maxFileSizeMB | quote }}

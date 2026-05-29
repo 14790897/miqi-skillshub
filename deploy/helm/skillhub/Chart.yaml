@@ -1,0 +1,17 @@
+apiVersion: v2
+name: skillhub
+description: MiQi SkillHub — 企业内部 AI Skills 管理平台
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - skills
+  - enterprise
+  - skillhub
+home: https://github.com/lichman0405/miqi-skillshub
+sources:
+  - https://github.com/lichman0405/miqi-skillshub
+maintainers:
+  - name: MiQi AI
+    email: platform@miqi.ai

@@ -1,0 +1,35 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+  read_timeout: 30s
+  write_timeout: 30s
+
+database:
+  host: localhost
+  port: 5432
+  user: skillhub
+  password: skillhub
+  name: skillhub
+  sslmode: disable
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+minio:
+  endpoint: localhost:9000
+  access_key: minioadmin
+  secret_key: minioadmin
+  bucket: skillhub-artifacts
+  use_ssl: false
+
+jwt:
+  secret: change-me-in-production-use-random-64-char-string
+  expiration: 24h
+
+llm:
+  endpoint: http://localhost:11434
+  api_key: ""
+  model: llama3

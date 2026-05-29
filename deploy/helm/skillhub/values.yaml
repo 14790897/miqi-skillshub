@@ -1,0 +1,289 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Global
+# ─────────────────────────────────────────────────────────────────────────────
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Backend (Go API)
+# ─────────────────────────────────────────────────────────────────────────────
+backend:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/lichman0405/miqi-skills-hub-backend
+    tag: ""          # defaults to .Chart.AppVersion
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+
+  livenessProbe:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 15
+
+  readinessProbe:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # Extra environment variables passed to the backend container
+  extraEnv: []
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Worker (Python Celery)
+# ─────────────────────────────────────────────────────────────────────────────
+worker:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/lichman0405/miqi-skills-hub-worker
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  concurrency: 4
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  extraEnv: []
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Frontend (Next.js)
+# ─────────────────────────────────────────────────────────────────────────────
+frontend:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/lichman0405/miqi-skills-hub-frontend
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ingress
+# ─────────────────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: skillhub.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          backend: backend
+        - path: /
+          pathType: Prefix
+          backend: frontend
+  tls: []
+  # tls:
+  #   - secretName: skillhub-tls
+  #     hosts:
+  #       - skillhub.example.com
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Application config
+# ─────────────────────────────────────────────────────────────────────────────
+app:
+  # JWT secret — MUST be overridden in production
+  jwtSecret: "change-me-in-production-use-random-64-char-string"
+  jwtExpiration: "24h"
+
+  llm:
+    endpoint: "http://localhost:11434"
+    apiKey: ""
+    model: "llama3"
+
+  scan:
+    sandboxImage: "python:3.12-slim"
+    timeoutSeconds: 60
+    maxFileSizeMB: 50
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PostgreSQL (pgvector)
+# ─────────────────────────────────────────────────────────────────────────────
+postgresql:
+  # Set enabled: false and provide externalHost/Port/... to use an external DB
+  enabled: true
+
+  image:
+    repository: pgvector/pgvector
+    tag: pg16
+    pullPolicy: IfNotPresent
+
+  auth:
+    username: skillhub
+    password: skillhub
+    database: skillhub
+
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+
+  # Used when postgresql.enabled=false
+  external:
+    host: ""
+    port: 5432
+    username: skillhub
+    password: skillhub
+    database: skillhub
+    sslmode: require
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Redis
+# ─────────────────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+  auth:
+    password: ""
+
+  persistence:
+    enabled: false
+    size: 4Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  # Used when redis.enabled=false
+  external:
+    host: ""
+    port: 6379
+    password: ""
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MinIO (object storage)
+# ─────────────────────────────────────────────────────────────────────────────
+minio:
+  enabled: true
+
+  image:
+    repository: minio/minio
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  auth:
+    rootUser: minioadmin
+    rootPassword: minioadmin
+
+  defaultBuckets: "skillhub-artifacts"
+
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+
+  service:
+    apiPort: 9000
+    consolePort: 9001
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Used when minio.enabled=false
+  external:
+    endpoint: ""
+    accessKey: ""
+    secretKey: ""
+    bucket: skillhub-artifacts
+    useSSL: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Service Account
+# ─────────────────────────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""

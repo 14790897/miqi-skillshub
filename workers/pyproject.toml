@@ -1,0 +1,32 @@
+[project]
+name = "skillhub-workers"
+version = "0.1.0"
+description = "SkillHub security scanners and LLM judge workers"
+requires-python = ">=3.11"
+dependencies = [
+    "celery>=5.4",
+    "redis>=5.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.14",
+    "psycopg2-binary>=2.9",
+    "httpx>=0.28",
+    "pydantic>=2.10",
+    "semgrep>=1.100",
+    "gitleaks>=8.23",
+    "minio>=7.2",
+    "python-magic>=0.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
