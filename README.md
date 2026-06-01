@@ -50,6 +50,23 @@ docker compose -f deploy/docker/docker-compose.yml up -d
 
 Access the platform at http://localhost:8080 (API) and http://localhost:3000 (UI).
 
+### Local Development (No Docker)
+
+**Prerequisites:** Go 1.23+, Node.js 20+
+
+```bash
+# Terminal 1 — Backend
+cd backend
+go run ./cmd/server -dev     # http://localhost:8088 (SQLite, no auth)
+
+# Terminal 2 — Frontend
+cd cli/frontend
+npm install
+npm run dev                  # http://localhost:3000
+```
+
+**Dev mode auto-seeds a test user:** `admin@skillhub.com` / `admin123`
+
 ### Helm (Kubernetes)
 
 ```bash
@@ -95,6 +112,23 @@ docker compose -f deploy/docker/docker-compose.yml up -d
 ```
 
 访问平台：http://localhost:8080（API）和 http://localhost:3000（前端界面）。
+
+### 本地开发（无需 Docker）
+
+**前置条件：** Go 1.23+、Node.js 20+
+
+```bash
+# 终端 1 — 后端
+cd backend
+go run ./cmd/server -dev     # http://localhost:8088（SQLite，无需认证）
+
+# 终端 2 — 前端
+cd cli/frontend
+npm install
+npm run dev                  # http://localhost:3000
+```
+
+**开发模式自动创建测试账号：** `admin@skillhub.com` / `admin123`
 
 ### 文档导航
 
