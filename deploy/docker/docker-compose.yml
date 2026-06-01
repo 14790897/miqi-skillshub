@@ -46,7 +46,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ../../backend
       dockerfile: ../deploy/docker/Dockerfile.backend
     ports:
       - "8080:8080"
@@ -68,7 +68,7 @@ services:
 
   worker:
     build:
-      context: ./workers
+      context: ../../workers
       dockerfile: ../deploy/docker/Dockerfile.worker
     environment:
       DATABASE_HOST: postgres

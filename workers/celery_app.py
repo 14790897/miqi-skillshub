@@ -1,12 +1,16 @@
 """SkillHub worker - Celery application factory."""
 
+import os
 from celery import Celery
 
 app = Celery("skillhub")
 
+redis_host = os.getenv("REDIS_HOST", "localhost")
+redis_port = os.getenv("REDIS_PORT", "6379")
+
 app.conf.update(
-    broker_url="redis://localhost:6379/0",
-    result_backend="redis://localhost:6379/1",
+    broker_url=f"redis://{redis_host}:{redis_port}/0",
+    result_backend=f"redis://{redis_host}:{redis_port}/1",
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",

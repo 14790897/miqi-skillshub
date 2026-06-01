@@ -94,3 +94,5 @@ desktop.ini
 # Docker / Helm generated
 # ──────────────────────────────────────────────
 deploy/helm/skillhub/charts/
+
+.workbuddy/memory

@@ -12,7 +12,6 @@ dependencies = [
     "httpx>=0.28",
     "pydantic>=2.10",
     "semgrep>=1.100",
-    "gitleaks>=8.23",
     "minio>=7.2",
     "python-magic>=0.4",
 ]
