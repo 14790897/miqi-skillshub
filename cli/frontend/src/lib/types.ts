@@ -152,6 +152,21 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface OAuthTokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface OAuthUserInfo {
+  id: string;
+  username: string;
+  email: string;
+  display_name: string;
+  roles: string[];
+  department: string;
+  avatar_url: string;
+}
+
 export interface Team {
   id: string;
   name: string;

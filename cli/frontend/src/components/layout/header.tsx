@@ -21,6 +21,7 @@ export default function Header() {
   }, []);
 
   const [username, setUsername] = useState("用户");
+  const [isOAuth, setIsOAuth] = useState(false);
 
   useEffect(() => {
     try {
@@ -28,6 +29,7 @@ export default function Header() {
       if (raw) {
         const user = JSON.parse(raw);
         setUsername(user.display_name || user.username || "用户");
+        setIsOAuth(user.oauth === true);
       }
     } catch {}
   }, []);
@@ -56,6 +58,14 @@ export default function Header() {
               {username.charAt(0).toUpperCase()}
             </div>
             <span className="font-medium">{username}</span>
+            {isOAuth && (
+              <span
+                className="text-[10px] px-1 py-0.5 rounded font-medium"
+                style={{ background: "var(--color-bg-subtle)", color: "var(--color-text-tertiary)", border: "1px solid var(--color-border-default)" }}
+              >
+                OAuth
+              </span>
+            )}
             <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>

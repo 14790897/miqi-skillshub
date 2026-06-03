@@ -113,6 +113,12 @@ func (s *AuthService) ChangePassword(userID uuid.UUID, oldPassword, newPassword 
 }
 
 func (s *AuthService) issueToken(user *model.User) (string, error) {
+	return s.IssueTokenForUser(user)
+}
+
+// IssueTokenForUser issues a signed JWT for an already-authenticated user.
+// Exported so that OAuth login handlers can call it directly.
+func (s *AuthService) IssueTokenForUser(user *model.User) (string, error) {
 	roles := make([]string, len(user.Roles))
 	for i, r := range user.Roles {
 		roles[i] = string(r)

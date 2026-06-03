@@ -14,6 +14,23 @@ type Config struct {
 	JWT      JWTConfig
 	LLM      LLMConfig
 	Scan     ScanConfig
+	OAuth    OAuthConfig
+}
+
+// OAuthConfig holds settings for SkillHub as an OAuth2 client connecting to an external provider (e.g. Sandbox).
+type OAuthConfig struct {
+	// ProviderBaseURL is the base URL of the OAuth2 provider, e.g. "http://sandbox.example.com"
+	ProviderBaseURL string
+	// ClientID registered in the provider
+	ClientID string
+	// ClientSecret registered in the provider
+	ClientSecret string
+	// RedirectURI must match what the provider has whitelisted
+	// e.g. "http://localhost:8088/api/v1/auth/oauth/callback"
+	RedirectURI string
+	// FrontendURL is where the browser is redirected after successful login
+	// e.g. "http://localhost:3000"
+	FrontendURL string
 }
 
 type ServerConfig struct {
@@ -107,6 +124,14 @@ func Load() *Config {
 	viper.SetDefault("scan.sandbox_image", "skillhub-sandbox:latest")
 	viper.SetDefault("scan.timeout_seconds", 300)
 	viper.SetDefault("scan.max_file_size_mb", 50)
+
+	// OAuth2 client (SkillHub as consumer of Sandbox SSO)
+	// Dev default points to the MiQroSandbox dev server per official docs.
+	viper.SetDefault("oauth.provider_base_url", "http://139.196.211.120:6810")
+	viper.SetDefault("oauth.client_id", "miqi")
+	viper.SetDefault("oauth.client_secret", "miqro123456")
+	viper.SetDefault("oauth.redirect_uri", "http://localhost:8088/api/v1/auth/oauth/callback")
+	viper.SetDefault("oauth.frontend_url", "http://localhost:3000")
 
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")

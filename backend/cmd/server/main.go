@@ -63,6 +63,15 @@ func main() {
 		Logger:    logger,
 		JWTSecret: "dev-secret",
 		DevMode:   *devMode,
+		OAuthConfig: router.OAuthClientConfig{
+			// MiQroSandbox dev server — see https://docs.miqroera.com/oauth2
+			ProviderBaseURL: "http://139.196.211.120:6810",
+			ClientID:        "miqi",
+			ClientSecret:    "miqro123456",
+			// Sandbox must whitelist this redirect_uri
+			RedirectURI: "http://localhost:8088/api/v1/auth/oauth/callback",
+			FrontendURL: "http://localhost:3000",
+		},
 	})
 
 	addr := fmt.Sprintf("0.0.0.0:8088")

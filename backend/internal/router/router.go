@@ -15,10 +15,20 @@ import (
 var devUserID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
 
 type RouterConfig struct {
-	DB        *gorm.DB
-	Logger    *zap.Logger
-	JWTSecret string
-	DevMode   bool
+	DB          *gorm.DB
+	Logger      *zap.Logger
+	JWTSecret   string
+	DevMode     bool
+	OAuthConfig OAuthClientConfig
+}
+
+// OAuthClientConfig holds the OAuth2 client credentials for SkillHub → Sandbox SSO.
+type OAuthClientConfig struct {
+	ProviderBaseURL string
+	ClientID        string
+	ClientSecret    string
+	RedirectURI     string
+	FrontendURL     string
 }
 
 func New(cfg RouterConfig) *gin.Engine {
@@ -63,6 +73,13 @@ func New(cfg RouterConfig) *gin.Engine {
 	adminH := handler.NewAdminHandler(adminSvc)
 	artifactH := handler.NewArtifactHandler(artifactSvc)
 	teamH := handler.NewTeamHandler(teamSvc)
+	oauthLoginH := handler.NewOAuthLoginHandler(handler.OAuthLoginConfig{
+		ProviderBaseURL: cfg.OAuthConfig.ProviderBaseURL,
+		ClientID:        cfg.OAuthConfig.ClientID,
+		ClientSecret:    cfg.OAuthConfig.ClientSecret,
+		RedirectURI:     cfg.OAuthConfig.RedirectURI,
+		FrontendURL:     cfg.OAuthConfig.FrontendURL,
+	}, authSvc, cfg.DB)
 
 	var auth gin.HandlerFunc
 	if cfg.DevMode {
@@ -96,6 +113,9 @@ func New(cfg RouterConfig) *gin.Engine {
 		{
 			authGroup.POST("/register", authH.Register)
 			authGroup.POST("/login", authH.Login)
+			// OAuth2 login via external provider (SkillHub as client)
+			authGroup.GET("/oauth/redirect", oauthLoginH.Redirect)
+			authGroup.GET("/oauth/callback", oauthLoginH.Callback)
 		}
 
 		api.GET("/health", func(c *gin.Context) {
