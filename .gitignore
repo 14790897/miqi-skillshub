@@ -95,3 +95,4 @@ desktop.ini
 # ──────────────────────────────────────────────
 deploy/helm/skillhub/charts/
 .workbuddy/memory/*
+backend/tmp/*
